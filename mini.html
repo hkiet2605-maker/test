@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mèo ăn thịt</title>
+
+    <style>
+      body {
+        margin: 0;
+        background: linear-gradient(rgb(48, 232, 85), rgb(65, 207, 167));
+        overflow: hidden;
+        font-family: sans-serif;
+      }
+      #game {
+        width: 100vw;
+        height: 100vh;
+      }
+
+      /* HUD */
+      #score,
+      #timer,
+      #life,
+      #coin {
+        position: fixed;
+        top: 10px;
+        color: #fff;
+        font-size: 18px;
+        z-index: 1000;
+      }
+      #score {
+        left: 10px;
+      }
+      #coin {
+        left: 110px;
+      }
+      #timer {
+        right: 10px;
+      }
+      #life {
+        left: 50%;
+        transform: translateX(-50%);
+      }
+
+      /* CAT */
+      #cat {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 80px;
+        height: 90px;
+        z-index: 999;
+        animation: bounce 0.6s infinite;
+      }
+      @keyframes bounce {
+        0%,
+        100% {
+          transform: translate(-50%, 0);
+        }
+        50% {
+          transform: translate(-50%, -6px);
+        }
+      }
+      .head {
+        position: absolute;
+        top: 0;
+        left: 10px;
+        width: 60px;
+        height: 50px;
+        background: #ffd166;
+      }
+      .ear {
+        position: absolute;
+        top: -10px;
+        width: 14px;
+        height: 14px;
+        background: #ffd166;
+      }
+      .ear.left {
+        left: 6px;
+      }
+      .ear.right {
+        right: 6px;
+      }
+      .eye {
+        position: absolute;
+        top: 18px;
+        width: 6px;
+        height: 6px;
+        background: #000;
+      }
+      .eye.left {
+        left: 14px;
+      }
+      .eye.right {
+        right: 14px;
+      }
+      .nose {
+        position: absolute;
+        top: 28px;
+        left: 50%;
+        width: 8px;
+        height: 5px;
+        background: #ef476f;
+        transform: translateX(-50%);
+      }
+      .body {
+        position: absolute;
+        top: 48px;
+        left: 6px;
+        width: 68px;
+        height: 30px;
+        background: #f4a261;
+      }
+      .foot {
+        position: absolute;
+        bottom: 0;
+        width: 14px;
+        height: 10px;
+        background: #e76f51;
+      }
+      .foot.left {
+        left: 18px;
+      }
+      .foot.right {
+        right: 18px;
+      }
+
+      /* ITEM */
+      .item {
+        position: fixed;
+        top: -40px;
+        font-size: 30px;
+      }
+
+      /* BUTTON */
+      #startBtn {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        padding: 14px 36px;
+        font-size: 26px;
+        border: none;
+        border-radius: 18px;
+        background: linear-gradient(135deg, #00c853, #64dd17);
+        color: #fff;
+        cursor: pointer;
+        z-index: 3000;
+      }
+
+      /* POPUP */
+      .popup {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.8);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 4000;
+      }
+      .popup.show {
+        display: flex;
+      }
+      .box {
+        background: #111;
+        color: #fff;
+        padding: 24px;
+        border-radius: 18px;
+        width: 280px;
+        text-align: center;
+      }
+
+      .btn {
+        margin-top: 12px;
+        padding: 12px;
+        font-size: 18px;
+        border: none;
+        border-radius: 14px;
+        width: 100%;
+        cursor: pointer;
+      }
+      .btn-restart {
+        background: #ff5252;
+        color: #fff;
+      }
+      .btn-shop {
+        background: #ffd54f;
+      }
+
+      .shop-item {
+        padding: 10px;
+        background: #222;
+        border-radius: 12px;
+        margin: 8px 0;
+        cursor: pointer;
+      }
+      #shopPopup {
+        z-index: 5000;
+      }
+    </style>
+  </head>
+
+  <body>
+    <!-- SHOP -->
+    <div id="shopPopup" class="popup">
+      <div class="box">
+        <h3>🛒 Cửa hàng</h3>
+
+        <h4>🎟 Voucher</h4>
+        <div class="shop-item" onclick="buyVoucher(10)">
+          🎫 Giảm 10% (10 xu)
+        </div>
+        <div class="shop-item" onclick="buyVoucher(20)">
+          🎫 Giảm 20% (20 xu)
+        </div>
+
+        <h4>🐱 Skin mèo</h4>
+        <div id="skinList"></div>
+
+        <button class="btn btn-restart" onclick="closeShop()">Đóng</button>
+      </div>
+    </div>
+
+    <!-- GAME OVER -->
+    <div id="gameOverPopup" class="popup">
+      <div class="box">
+        <h2>🐱 Game Over</h2>
+        <p>🍖 <span id="finalScore">0</span></p>
+        <p>🪙 <span id="finalCoin">0</span></p>
+        <button class="btn btn-restart" onclick="startGame()">Chơi lại</button>
+        <button class="btn btn-shop" onclick="openShop()">Vào shop</button>
+      </div>
+    </div>
+
+    <div id="game">
+      <div id="score">🍖 0</div>
+      <div id="coin">🪙 0</div>
+      <div id="timer">⏱️ 20</div>
+      <div id="life">❤️❤️❤️</div>
+
+      <button id="startBtn" onclick="startGame()">▶ Start</button>
+
+      <div id="cat">
+        <div class="ear left"></div>
+        <div class="ear right"></div>
+        <div class="head">
+          <div class="eye left"></div>
+          <div class="eye right"></div>
+          <div class="nose"></div>
+        </div>
+        <div class="body"></div>
+        <div class="foot left"></div>
+        <div class="foot right"></div>
+      </div>
+    </div>
+
+    <script>
+      /* ====== CORE ====== */
+      const cat = document.getElementById("cat");
+      let score = 0,
+        life = 3,
+        timeLeft = 20;
+      let gameRunning = false,
+        dropI = null,
+        timerI = null;
+
+      let coin = parseInt(localStorage.getItem("coin")) || 0;
+      document.getElementById("coin").innerText = "🪙 " + coin;
+
+      /* ====== MOVE ====== */
+      document.addEventListener("mousemove", (e) => {
+        if (!gameRunning) return;
+        const w = window.innerWidth - cat.offsetWidth;
+        cat.style.left =
+          Math.max(0, Math.min(e.clientX - cat.offsetWidth / 2, w)) + "px";
+      });
+
+      /* ====== GAME ====== */
+      function clearItems() {
+        document.querySelectorAll(".item").forEach((i) => i.remove());
+      }
+
+      function startGame() {
+        clearItems();
+        score = 0;
+        life = 3;
+        timeLeft = 20;
+        document.getElementById("score").innerText = "🍖 0";
+        document.getElementById("life").innerText = "❤️❤️❤️";
+        document.getElementById("timer").innerText = "⏱️ 20";
+
+        document.getElementById("startBtn").style.display = "none";
+        document.getElementById("gameOverPopup").classList.remove("show");
+
+        gameRunning = true;
+
+        timerI = setInterval(() => {
+          timeLeft--;
+          document.getElementById("timer").innerText = "⏱️ " + timeLeft;
+          if (timeLeft <= 0) endGame();
+        }, 1000);
+
+        dropI = setInterval(dropItem, 280);
+      }
+
+      function endGame() {
+        if (!gameRunning) return;
+        gameRunning = false;
+
+        clearInterval(dropI);
+        clearInterval(timerI);
+        clearItems();
+
+        // 👉 QUY ĐỔI: 10 điểm = 1 xu
+        const earnedCoin = Math.floor(score / 100);
+        coin += earnedCoin;
+        localStorage.setItem("coin", coin);
+
+        document.getElementById("coin").innerText = "🪙 " + coin;
+        document.getElementById("finalScore").innerText = score;
+        document.getElementById("finalCoin").innerText = coin;
+
+        document.getElementById("gameOverPopup").classList.add("show");
+      }
+
+      /* ====== ITEM ====== */
+      function dropItem() {
+        if (!gameRunning) return;
+
+        const item = document.createElement("div");
+        item.className = "item";
+        item.type = Math.random() < 0.7 ? "meat" : "bomb";
+        item.textContent = item.type === "meat" ? "🍖" : "💣";
+        item.style.left = Math.random() * (window.innerWidth - 40) + "px";
+        document.body.appendChild(item);
+
+        const fall = setInterval(() => {
+          item.style.top = item.offsetTop + 4 + "px";
+          const a = item.getBoundingClientRect(),
+            b = cat.getBoundingClientRect();
+
+          if (a.bottom > b.top && a.left < b.right && a.right > b.left) {
+            if (item.type === "meat") {
+              score++;
+              document.getElementById("score").innerText = "🍖 " + score;
+            } else {
+              life--;
+              document.getElementById("life").innerText = "❤️".repeat(life);
+              if (life <= 0) {
+                clearInterval(fall);
+                item.remove();
+                endGame();
+                return;
+              }
+            }
+            item.remove();
+            clearInterval(fall);
+          }
+          if (item.offsetTop > window.innerHeight) {
+            item.remove();
+            clearInterval(fall);
+          }
+        }, 20);
+      }
+
+      /* ====== SHOP ====== */
+      function openShop() {
+        document.getElementById("gameOverPopup").classList.remove("show");
+        document.getElementById("shopPopup").classList.add("show");
+      }
+
+      function closeShop() {
+        document.getElementById("shopPopup").classList.remove("show");
+        document.getElementById("gameOverPopup").classList.add("show");
+      }
+
+      function buyVoucher(p) {
+        if (coin < p) return alert("Không đủ xu!");
+        coin -= p;
+        localStorage.setItem("coin", coin);
+        document.getElementById("coin").innerText = "🪙 " + coin;
+        alert("Đã mua voucher " + p + "%");
+      }
+
+      /* ====== SKIN ====== */
+      const skins = [
+        { id: "default", name: "🐱 Mặc định", price: 0 },
+        { id: "orange", name: "🟠 Cam", price: 5 },
+        { id: "black", name: "⚫ Đen", price: 8 },
+        { id: "neon", name: "🌈 Neon", price: 12 },
+      ];
+      let ownedSkins = JSON.parse(localStorage.getItem("ownedSkins")) || [
+        "default",
+      ];
+      let currentSkin = localStorage.getItem("skin") || "default";
+
+      function renderSkins() {
+        const box = document.getElementById("skinList");
+        box.innerHTML = "";
+        skins.forEach((s) => {
+          const d = document.createElement("div");
+          d.className = "shop-item";
+          if (currentSkin === s.id) {
+            d.innerText = s.name + " ✔";
+          } else if (ownedSkins.includes(s.id)) {
+            d.innerText = s.name + " ▶";
+            d.onclick = () => selectSkin(s.id);
+          } else {
+            d.innerText = `${s.name} (${s.price} xu)`;
+            d.onclick = () => buySkin(s.id, s.price);
+          }
+          box.appendChild(d);
+        });
+      }
+
+      function buySkin(id, price) {
+        if (coin < price) return alert("Không đủ xu!");
+        coin -= price;
+        localStorage.setItem("coin", coin);
+        ownedSkins.push(id);
+        localStorage.setItem("ownedSkins", JSON.stringify(ownedSkins));
+        selectSkin(id);
+      }
+
+      function selectSkin(id) {
+        currentSkin = id;
+        localStorage.setItem("skin", id);
+        applySkin(id);
+        renderSkins();
+      }
+
+      function applySkin(s) {
+        const h = document.querySelector(".head"),
+          b = document.querySelector(".body");
+        const map = {
+          default: ["#ffd166", "#f4a261"],
+          orange: ["#ff9800", "#f57c00"],
+          black: ["#333", "#000"],
+          neon: [
+            "linear-gradient(45deg,#00e5ff,#1de9b6)",
+            "linear-gradient(45deg,#ff4081,#7c4dff)",
+          ],
+        };
+        h.style.background = map[s][0];
+        b.style.background = map[s][1];
+      }
+
+      renderSkins();
+      applySkin(currentSkin);
+    </script>
+  </body>
+</html>
